@@ -192,7 +192,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     $applications = $this->loadAcquiaCloudApplications();
 
     $application_options = array_map(function($item) {
-      return " $item->name : ($item->uuid)";
+      return "$item->name : ($item->uuid)";
     }, $applications);
 
     $site_index = $this->io->select('<question>Which acquia environment should we setup aliases for?</question> ', $application_options, FALSE);
