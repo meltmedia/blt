@@ -1,0 +1,38 @@
+name: PROJECT_NAME
+
+recipe: drupal8
+
+config:
+  webroot: docroot
+  php: '7.2'
+  drush: global:8.1.12
+  xdebug: true
+  conf: 
+    php: .vscode/php.ini
+
+services:
+  node:
+    type: node:8
+    globals:
+      webpack: 'latest'
+  database:
+    creds:
+      user: drupal
+      password: drupal
+      database: drupal
+
+tooling:
+  npm:
+    service: node
+  webpack:
+    service: node
+  drush:
+    service: appserver
+    cmd: drush
+  blt:
+    service: appserver
+    cmd: /app/vendor/bin/blt
+
+events:
+  post-start:
+    - echo "Making the .bashrc file"
