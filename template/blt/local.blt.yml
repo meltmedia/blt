@@ -4,8 +4,9 @@ drupal:
 project:
   human_name: TMP_REPLACE
   machine_name: TMP_REPLACE
-  appId: TMP_REPLACE
   prefix: TMP_REPLACE
   local:
     protocol: https
     hostname: ${project.machine_name}.lndo.site
+cloud:
+  appId: TMP_REPLACE
