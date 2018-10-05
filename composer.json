@@ -4,7 +4,7 @@
   "require": {
     "composer-plugin-api": "^1.1",
     "composer/installers": "1.6.0",
-    "acquia/blt": "9.1.7",
+    "acquia/blt": "^9.1",
     "guzzlehttp/guzzle": "^6.3"
   },
   "autoload": {
@@ -14,6 +14,12 @@
     }
   },
   "extra": {
-    "class": "Meltmedia\\Blt\\Composer\\Plugin"
+    "class": "Meltmedia\\Blt\\Composer\\Plugin",
+    "enable-patching": true,
+    "patches": {
+      "acquia/blt": {
+        "Fix ISSUE-3114": "https://github.com/sebinievas/blt/commit/cb19fd71696fc0b579a392a814427caf9a9cb703.patch"
+      }
+    }
   }
 }
