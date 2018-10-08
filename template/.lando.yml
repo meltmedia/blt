@@ -35,4 +35,5 @@ tooling:
 
 events:
   post-start:
-    - echo "Making the .bashrc file"
+    - appserver: "/app/vendor/meltmedia/blt/scripts/run.sh"
+    

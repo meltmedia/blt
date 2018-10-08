@@ -45,4 +45,10 @@ class ProjectTest extends TestCase {
     $project->setAppId('b7ba32f2-2793-466e-a369-e8a701965fba');
     $this->assertEquals('b7ba32f2-2793-466e-a369-e8a701965fba', $project->appId);
   }
+
+  public function testSetGitRemoteUrl() {
+    $project = new Project();
+    $project->setGitRemoteUrl('project@svn-1234.devcloud.hosting.acquia.com:project.git');
+    $this->assertEquals('project@svn-1234.devcloud.hosting.acquia.com:project.git', $project->gitRemoteUrl);
+  }
 }

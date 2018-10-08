@@ -8,5 +8,7 @@ project:
   local:
     protocol: https
     hostname: ${project.machine_name}.lndo.site
+git:
+  remotes: { }
 cloud:
   appId: TMP_REPLACE

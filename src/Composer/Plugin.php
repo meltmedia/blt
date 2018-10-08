@@ -100,8 +100,18 @@ class Plugin implements PluginInterface, EventSubscriberInterface
   }
 
   public function onPostUpdateCmd(Event $event) {
+    $setupFile = $this->getRepoRoot() . '/.melt';
+
     if ($this->isInitialInstall()) {
       $this->setupProject();
+    }
+    elseif (file_exists($setupFile) && file_get_contents($setupFile) === '') {
+      // $this->finishInstall();
+      // $command = "echo 'OK' > $setupFile";
+      // $success = $this->executeCommand($command, [], TRUE);
+      // if (!$success) {
+      //   $this->io->write("<error>Could not write to $setupFile</error>");
+      // }
     }
   }
 
@@ -111,39 +121,55 @@ class Plugin implements PluginInterface, EventSubscriberInterface
    * @return void
    */
   protected function setupProject() {
-    $this->project = new Project();
-    $this->gatherProjectInformation();
-    $this->copyTemplateFiles();
-    $this->generateBltConfig();
-    $this->generateLandoConfig();
-    $this->generateComposerJson();
+    $setupFile = $this->getRepoRoot() . '/.melt';
+    if (!file_exists($setupFile)) {
+      $this->project = new Project();
+      $this->gatherProjectInformation();
+      $this->copyTemplateFiles();
+      $this->generateBltConfig();
+      $this->generateLandoConfig();
+      $this->generateComposerJson();
+      $command = "touch $setupFile";
+      $success = $this->executeCommand($command, [], TRUE);
+      if (!$success) {
+        $this->io->write("<error>Could not run $command</error>");
+      }
+    }
+  }
 
+  protected function finishInstall() {
     // initialize drupal aliases
-    $command = 'cd ' . $this->getRepoRoot() . ' && lando start';
+    $command = 'cd ' . $this->getRepoRoot() . ' && lando start --ansi -y';
     $success = $this->executeCommand($command, [], TRUE);
     if (!$success) {
       $this->io->write("<error>BLT installation failed! Please execute <comment>$command --verbose</comment> to debug the issue.</error>");
     }
 
     // initialize drupal aliases
-    $command = $this->getVendorPath() . '/acquia/blt/bin/blt blt:init:settings --ansi -y';
+    $command = 'cd ' . $this->getRepoRoot() . ' && lando blt blt:init:settings --ansi -y';
     $success = $this->executeCommand($command, [], TRUE);
     if (!$success) {
       $this->io->write("<error>BLT installation failed! Please execute <comment>$command --verbose</comment> to debug the issue.</error>");
     }
 
     // initialize drupal aliases
-    $command = $this->getVendorPath() . '/acquia/blt/bin/blt setup --ansi -y';
+    $command = 'cd ' . $this->getRepoRoot() . ' && lando blt setup --ansi -y';
     $success = $this->executeCommand($command, [], TRUE);
     if (!$success) {
       $this->io->write("<error>BLT installation failed! Please execute <comment>$command --verbose</comment> to debug the issue.</error>");
     }
 
     // initialize drupal aliases - This may not be necessary if it happens during `blt setup`
-    $command = $this->getVendorPath() . '/acquia/blt/bin/blt recipes:aliases:init:acquia --ansi -y';
+    $command = 'cd ' . $this->getRepoRoot() . ' && lando blt recipes:aliases:init:acquia --ansi -y';
     $success = $this->executeCommand($command, [], TRUE);
     if (!$success) {
       $this->io->write("<error>BLT installation failed! Please execute <comment>$command --verbose</comment> to debug the issue.</error>");
+    }
+
+    $command = 'touch ' . $this->getRepoRoot() . '/blt/.melt_schema_version';
+    $success = $this->executeCommand($command, [], TRUE);
+    if (!$success) {
+      $this->io->write("<error>Could not write to /blt/.melt_schema_version</error>");
     }
   }
 
@@ -198,6 +224,22 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     $site_index = $this->io->select('<question>Which acquia environment should we setup aliases for?</question> ', $application_options, FALSE);
     $application = $applications[$site_index];
     $this->project->setAppId($application->uuid);
+
+    // Gather the Acquia git remote URL
+    $environments = $this->loadAcquiaCloudApplicationEnvironments($application->uuid);
+    $this->project->setGitRemoteUrl($environments[0]->vcs->url);
+  }
+
+  protected function loadAcquiaCloudApplicationEnvironments($appId) {
+    // attempt to gather acquia site information
+    try {
+      $response = $this->cloudApiClient->get("https://cloud.acquia.com/api/applications/$appId/environments");
+    } catch (ClientException $e) {
+      $this->io->write('<error>' . $e->getMessage() . '</error>');
+    }
+
+    $data = json_decode($response->getBody()->getContents());
+    return $data->_embedded->items;
   }
 
   protected function generateBltConfig() {
@@ -205,7 +247,12 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     $local_blt_config = YamlMunge::parseFile($filePath);
     $local_blt_config['project']['human_name'] = $this->project->name;
     $local_blt_config['project']['machine_name'] = $this->project->machineName;
-    $local_blt_config['project']['appId'] = $this->project->appId;
+    $local_blt_config['cloud']['appId'] = $this->project->appId;
+
+    // add git remotes
+    $local_blt_config['git']['remotes'] = [
+      'cloud' => $this->project->gitRemoteUrl
+    ];
 
     if ($this->project->jiraProjectCode) {
       $local_blt_config['project']['prefix'] = $this->project->jiraProjectCode;
@@ -385,6 +432,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     }
     return FALSE;
   }
+  
 
   /**
    * Create a new directory.
