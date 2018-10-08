@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # create symbolic link to ~/.acquia
-if [ -f "~/.acquia" ]; then
+if [ ! -f "~/.acquia" ]; then
   ln -s /user/.acquia ~/.acquia
 fi
 
