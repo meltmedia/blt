@@ -10,3 +10,5 @@ PATH=/app/vendor/bin:$PATH
 blt blt:init:settings
 blt setup
 blt recipes:aliases:init:acquia
+blt recipes:config:init:splits
+
