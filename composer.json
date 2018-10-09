@@ -18,7 +18,8 @@
     "enable-patching": true,
     "patches": {
       "acquia/blt": {
-        "Fix ISSUE-3114": "https://github.com/sebinievas/blt/commit/44e633bffb00df3a0222b06832ef85d6201fb62b.patch"
+        "Fix ISSUE-3114 1of2": "https://github.com/sebinievas/blt/commit/cb19fd71696fc0b579a392a814427caf9a9cb703.patch",
+        "Fix ISSUE-3114 2of2": "https://github.com/sebinievas/blt/commit/44e633bffb00df3a0222b06832ef85d6201fb62b.patch"
       }
     }
   }
