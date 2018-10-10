@@ -10,5 +10,7 @@ project:
     hostname: ${project.machine_name}.lndo.site
 git:
   remotes: { }
+  hooks:
+    commit-msg: false
 cloud:
   appId: TMP_REPLACE
