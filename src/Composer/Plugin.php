@@ -100,7 +100,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
   }
 
   public function onPostUpdateCmd(Event $event) {
-    $setupFile = $this->getRepoRoot() . '/.melt';
+    $setupFile = $this->getRepoRoot() . '/.meltmedia';
 
     if ($this->isInitialInstall()) {
       $this->setupProject();
@@ -121,7 +121,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
    * @return void
    */
   protected function setupProject() {
-    $setupFile = $this->getRepoRoot() . '/.melt';
+    $setupFile = $this->getRepoRoot() . '/.meltmedia';
     if (!file_exists($setupFile)) {
       $this->project = new Project();
       $this->gatherProjectInformation();
@@ -206,13 +206,16 @@ class Plugin implements PluginInterface, EventSubscriberInterface
       return $answer;
     }, NULL, $this->project->machineName);
 
-    // Verify the machine-name...
+    // @todo When we are ready to enforce project name, uncomment
+    // Ask for the JIRA project name...
+    /***
     $this->io->askAndValidate("Set the JIRA project name if you have one. <comment>(Leave empty if you don't know)</comment>: ", function($answer) {
       if (!is_null($answer)) {
         $this->project->setJiraProjectCode($answer);
       }
       return $answer;
     }, NULL);
+     */
 
     // Ask the user for the Acquia UUID...
     $applications = $this->loadAcquiaCloudApplications();
