@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Update $PATH to include blt command
 PATH=/app/vendor/bin:$PATH
@@ -6,7 +6,7 @@ PATH=/app/vendor/bin:$PATH
 # ensure settings are set up properly
 blt blt:init:settings
 
-if [[ ( -f "/app/.meltmedia" ) && -s "/app/.meltmedia"  ]]; then
+if [[ -f "/app/.meltmedia" && -s "/app/.meltmedia" ]]; then
   exit 0;
 fi
 
