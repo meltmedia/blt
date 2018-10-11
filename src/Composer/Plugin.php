@@ -110,6 +110,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
       $this->setupProject();
     }
     elseif (file_exists($setupFile) && file_get_contents($setupFile) !== '') {
+      $this->io->write("<warning>Attempting to finish installation...</warning>");
       $this->finishInstall();
     }
   }
@@ -136,6 +137,11 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     }
   }
 
+  /**
+   * Attempts to update 
+   *
+   * @return void
+   */
   protected function finishInstall() {
     $this->generateComposerJson();
   }
@@ -257,6 +263,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface
    * @return void
    */
   protected function generateComposerJson() {
+    
+    $this->io->write('<comment>Updating root composer.json with melt dependencies...</comment>');
     $filePath = $this->getRepoRoot() . '/composer.json';
 
     $composer_json = \json_decode(file_get_contents($filePath), TRUE);
@@ -266,6 +274,9 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     }
 
     \file_put_contents($filePath, \json_encode($composer_json, JSON_PRETTY_PRINT));
+
+    $this->io->write('<comment>Done.</comment>');
+    
   }
 
   /**
