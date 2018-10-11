@@ -22,6 +22,9 @@ blt setup -v
 blt recipes:aliases:init:acquia
 blt recipes:cloud-hooks:init
 
+# enable modules
+drush pm-enable cohesion cohesion_base_styles cohesion_custom_styles cohesion_elements cohesion_style_helpers cohesion_templates cohesion_website_settings -y 
+
 # enable config split
 drush en config_split -y
 drush cex -y
