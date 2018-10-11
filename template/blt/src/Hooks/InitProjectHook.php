@@ -21,4 +21,14 @@ class InitProjectHook extends BltTasks {
     $this->say("preCommandMessage hook: The {$command->getName()} command is about to run!");
   }
 
+  /**
+   * This will be called after the `internal:add-to-project` command.
+   *
+   * @hook post-command-event internal:add-to-project
+   */
+  public function postInternalAddToProject(ConsoleCommandEvent $event) {
+    $command = $event->getCommand();
+    $this->say("postCommandMessage hook: The {$command->getName()} command is about to run!");
+  }
+
 }
