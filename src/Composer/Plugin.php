@@ -110,7 +110,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface
       $this->setupProject();
     }
     elseif (file_exists($setupFile) && file_get_contents($setupFile) !== '') {
-      $this->io->write("<warning>Attempting to finish installation...</warning>");
       $this->finishInstall();
     }
   }
@@ -128,6 +127,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
       $this->copyTemplateFiles();
       $this->generateBltConfig();
       $this->generateLandoConfig();
+      $this->generateComposerJson();
 
       $command = "touch $setupFile";
       $success = $this->executeCommand($command, [], TRUE);
@@ -143,7 +143,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface
    * @return void
    */
   protected function finishInstall() {
-    $this->generateComposerJson();
   }
 
   protected function copyTemplateFiles() {
@@ -263,7 +262,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
    * @return void
    */
   protected function generateComposerJson() {
-    
+
     $this->io->write('<comment>Updating root composer.json with melt dependencies...</comment>');
     $filePath = $this->getRepoRoot() . '/composer.json';
 
