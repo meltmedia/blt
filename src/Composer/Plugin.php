@@ -19,6 +19,10 @@ use Symfony\Component\Yaml\Yaml;
 use Acquia\Blt\Robo\Common\YamlMunge;
 
 use function is_string;
+use function file_put_contents;
+use function file_get_contents;
+use function json_decode;
+use function json_encode;
 
 class Plugin implements PluginInterface, EventSubscriberInterface
 {
@@ -105,13 +109,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     if ($this->isInitialInstall()) {
       $this->setupProject();
     }
-    elseif (file_exists($setupFile) && file_get_contents($setupFile) === '') {
-      // $this->finishInstall();
-      // $command = "echo 'OK' > $setupFile";
-      // $success = $this->executeCommand($command, [], TRUE);
-      // if (!$success) {
-      //   $this->io->write("<error>Could not write to $setupFile</error>");
-      // }
+    elseif (file_exists($setupFile) && file_get_contents($setupFile) !== '') {
+      $this->finishInstall();
     }
   }
 
@@ -128,7 +127,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
       $this->copyTemplateFiles();
       $this->generateBltConfig();
       $this->generateLandoConfig();
-      $this->generateComposerJson();
+
       $command = "touch $setupFile";
       $success = $this->executeCommand($command, [], TRUE);
       if (!$success) {
@@ -138,39 +137,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
   }
 
   protected function finishInstall() {
-    // initialize drupal aliases
-    $command = 'cd ' . $this->getRepoRoot() . ' && lando start --ansi -y';
-    $success = $this->executeCommand($command, [], TRUE);
-    if (!$success) {
-      $this->io->write("<error>BLT installation failed! Please execute <comment>$command --verbose</comment> to debug the issue.</error>");
-    }
-
-    // initialize drupal aliases
-    $command = 'cd ' . $this->getRepoRoot() . ' && lando blt blt:init:settings --ansi -y';
-    $success = $this->executeCommand($command, [], TRUE);
-    if (!$success) {
-      $this->io->write("<error>BLT installation failed! Please execute <comment>$command --verbose</comment> to debug the issue.</error>");
-    }
-
-    // initialize drupal aliases
-    $command = 'cd ' . $this->getRepoRoot() . ' && lando blt setup --ansi -y';
-    $success = $this->executeCommand($command, [], TRUE);
-    if (!$success) {
-      $this->io->write("<error>BLT installation failed! Please execute <comment>$command --verbose</comment> to debug the issue.</error>");
-    }
-
-    // initialize drupal aliases - This may not be necessary if it happens during `blt setup`
-    $command = 'cd ' . $this->getRepoRoot() . ' && lando blt recipes:aliases:init:acquia --ansi -y';
-    $success = $this->executeCommand($command, [], TRUE);
-    if (!$success) {
-      $this->io->write("<error>BLT installation failed! Please execute <comment>$command --verbose</comment> to debug the issue.</error>");
-    }
-
-    $command = 'touch ' . $this->getRepoRoot() . '/blt/.melt_schema_version';
-    $success = $this->executeCommand($command, [], TRUE);
-    if (!$success) {
-      $this->io->write("<error>Could not write to /blt/.melt_schema_version</error>");
-    }
+    $this->generateComposerJson();
   }
 
   protected function copyTemplateFiles() {
@@ -290,7 +257,15 @@ class Plugin implements PluginInterface, EventSubscriberInterface
    * @return void
    */
   protected function generateComposerJson() {
+    $filePath = $this->getRepoRoot() . '/composer.json';
 
+    $composer_json = \json_decode(file_get_contents($filePath), TRUE);
+
+    if (isset($composer_json['extra']['merge-plugin']['require'])) {
+      $composer_json['extra']['merge-plugin']['require'][] = 'blt/composer.melt.json';
+    }
+
+    \file_put_contents($filePath, \json_encode($composer_json, JSON_PRETTY_PRINT));
   }
 
   /**

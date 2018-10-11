@@ -1,0 +1,11 @@
+{
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://bitbucket.org/cohesion_dev/dx8-module.git"
+    }
+  ],
+  "require": {
+    "cohesion/dx8": "^4.1"
+  }
+}
