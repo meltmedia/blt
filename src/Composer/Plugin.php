@@ -268,15 +268,10 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     $filePath = $this->getRepoRoot() . '/composer.json';
 
     $composer_json = \json_decode(file_get_contents($filePath), TRUE);
-
-    if (isset($composer_json['extra']['merge-plugin']['require'])) {
-      $composer_json['extra']['merge-plugin']['require'][] = 'blt/composer.melt.json';
-    }
+    $composer_json['extra']['merge-plugin']['require'][] = 'blt/composer.melt.json';
 
     \file_put_contents($filePath, \json_encode($composer_json, JSON_PRETTY_PRINT));
-    $this->io->ask('Yo continue?');
     $this->io->write('<comment>Done.</comment>');
-    
   }
 
   /**
