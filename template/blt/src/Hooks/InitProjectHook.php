@@ -4,6 +4,7 @@ namespace Acquia\Blt\Custom\Hooks;
 
 use Acquia\Blt\Robo\BltTasks;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
+use Consolidation\AnnotatedCommand\CommandData;
 
 /**
  * This class defines example hooks.
@@ -22,11 +23,11 @@ class InitProjectHook extends BltTasks {
   }
 
   /**
-   * This will be called before the `recipes:blt:init:command` command.
+   * This will be called before the `source:build:composer` command.
    * 
-   * @hook command-event recipes:blt:init:command
+   * @hook command-event source:build:composer
    */
-  public function preRecipesBltInitCommand(ConsoleCommandEvent $event) {
+  public function preSourceBuildComposer(CommandData $command) {
     
     $this->say('<comment>Updating root composer.json with melt dependencies...</comment>');
     $filePath = $this->getConfigValue('repo.root') . '/composer.json';
