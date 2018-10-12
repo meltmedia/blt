@@ -128,7 +128,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface
       $this->copyTemplateFiles();
       $this->generateBltConfig();
       $this->generateLandoConfig();
-      $this->generateComposerJson();
 
       $command = "touch $setupFile";
       $success = $this->executeCommand($command, [], TRUE);
@@ -255,23 +254,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     } catch (\Exception $e) {
       throw new \Exception("Could not update $filePath.");
     }
-  }
-
-  /**
-   * Generates the custom json we want to include into our BLT
-   *
-   * @return void
-   */
-  protected function generateComposerJson() {
-
-    $this->io->write('<comment>Updating root composer.json with melt dependencies...</comment>');
-    $filePath = $this->getRepoRoot() . '/composer.json';
-
-    $composer_json = \json_decode(file_get_contents($filePath), TRUE);
-    $composer_json['extra']['merge-plugin']['require'][] = 'blt/composer.melt.json';
-
-    \file_put_contents($filePath, \json_encode($composer_json, JSON_PRETTY_PRINT));
-    $this->io->write('<comment>Done.</comment>');
   }
 
   /**

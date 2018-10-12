@@ -21,4 +21,21 @@ class InitProjectHook extends BltTasks {
     $this->say("preCommandMessage hook: The {$command->getName()} command is about to run!");
   }
 
+  /**
+   * This will be called before the `recipes:blt:init:command` command.
+   * 
+   * @hook command-event recipes:blt:init:command
+   */
+  public function preRecipesBltInitCommand(ConsoleCommandEvent $event) {
+    
+    $this->say('<comment>Updating root composer.json with melt dependencies...</comment>');
+    $filePath = $this->getConfigValue('repo.root') . '/composer.json';
+
+    $composer_json = \json_decode(file_get_contents($filePath), TRUE);
+    $composer_json['extra']['merge-plugin']['require'][] = 'blt/composer.melt.json';
+
+    \file_put_contents($filePath, \json_encode($composer_json, JSON_PRETTY_PRINT));
+    $this->io->say('<comment>Done.</comment>');
+  }
+
 }
