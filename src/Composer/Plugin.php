@@ -109,8 +109,9 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     if ($this->isInitialInstall()) {
       $this->setupProject();
     }
-    elseif (file_exists($setupFile) && file_get_contents($setupFile) !== '') {
+    elseif (file_exists($setupFile) && filesize($setupFile) > 0) {
       $this->finishInstall();
+      $this->io->ask('This is a random question...');
     }
   }
 
@@ -273,7 +274,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     }
 
     \file_put_contents($filePath, \json_encode($composer_json, JSON_PRETTY_PRINT));
-
+    $this->io->ask('Yo continue?');
     $this->io->write('<comment>Done.</comment>');
     
   }
