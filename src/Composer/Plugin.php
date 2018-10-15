@@ -124,13 +124,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface
       $this->generateLandoConfig();
       $this->generateTravisConfig();
 
-      $git_dir = $this->getRepoRoot() . '/.git';
-      $command = "rm -rf $git_dir";
-      $success = $this->executeCommand($command, [], TRUE);
-      if (!$success) {
-        $this->io->write("<error>Could not run $command</error>");
-      }
-
       $command = "touch $setupFile";
       $success = $this->executeCommand($command, [], TRUE);
       if (!$success) {
