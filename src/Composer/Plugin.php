@@ -104,14 +104,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface
   }
 
   public function onPostUpdateCmd(Event $event) {
-    $setupFile = $this->getRepoRoot() . '/.meltmedia';
-
     if ($this->isInitialInstall()) {
       $this->setupProject();
-    }
-    elseif (file_exists($setupFile) && filesize($setupFile) > 0) {
-      $this->finishInstall();
-      $this->io->ask('This is a random question...');
     }
   }
 
@@ -128,6 +122,14 @@ class Plugin implements PluginInterface, EventSubscriberInterface
       $this->copyTemplateFiles();
       $this->generateBltConfig();
       $this->generateLandoConfig();
+      $this->generateTravisConfig();
+
+      $git_dir = $this->getRepoRoot() . '/.git';
+      $command = "rm -rf $git_dir";
+      $success = $this->executeCommand($command, [], TRUE);
+      if (!$success) {
+        $this->io->write("<error>Could not run $command</error>");
+      }
 
       $command = "touch $setupFile";
       $success = $this->executeCommand($command, [], TRUE);
@@ -135,14 +137,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         $this->io->write("<error>Could not run $command</error>");
       }
     }
-  }
-
-  /**
-   * Attempts to update 
-   *
-   * @return void
-   */
-  protected function finishInstall() {
   }
 
   protected function copyTemplateFiles() {
@@ -251,6 +245,37 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 
     try {
       YamlMunge::writeFile($filePath, $lando_config);
+    } catch (\Exception $e) {
+      throw new \Exception("Could not update $filePath.");
+    }
+  }
+
+  /**
+   * Adds travis CI support
+   *
+   * @return void
+   */
+  protected function generateTravisConfig() {
+
+    $command = "blt recipes:ci:pipelines:init";
+    $success = $this->executeCommand($command, [], TRUE);
+    if (!$success) {
+      $this->io->write("<error>Could not run $command</error>");
+      return FALSE;
+    }
+
+    $filePath = $this->getRepoRoot() . '/.travis.yml';
+    $travis_config = YamlMunge::parseFile($filePath);
+
+    preg_match('/@(.+)?:/', $this->project->gitRemoteUrl, $matches);
+    if (!empty($matches) && isset($matches[1])) {
+      $acquia_host = $matches[1];
+      $travis_config['addons']['ssh_known_hosts'][] = $acquia_host;
+      $travis_config['addons']['ssh_known_hosts'] = array_unique($travis_config['addons']['ssh_known_hosts']);
+    }
+
+    try {
+      YamlMunge::writeFile($filePath, $travis_config);
     } catch (\Exception $e) {
       throw new \Exception("Could not update $filePath.");
     }
