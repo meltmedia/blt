@@ -257,7 +257,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
    */
   protected function generateTravisConfig() {
 
-    $command = "blt recipes:ci:pipelines:init";
+    $command = "blt recipes:ci:travis:init";
     $success = $this->executeCommand($command, [], TRUE);
     if (!$success) {
       $this->io->write("<error>Could not run $command</error>");
