@@ -5,7 +5,6 @@ recipe: drupal8
 config:
   webroot: docroot
   php: '7.2'
-  drush: global:9.4
   conf: 
     php: .vscode/php.ini
 
@@ -27,7 +26,7 @@ tooling:
     service: node
   drush:
     service: appserver
-    cmd: drush
+    cmd: /app/vendor/drush/drush/drush
   blt:
     service: appserver
     cmd: /app/vendor/bin/blt
