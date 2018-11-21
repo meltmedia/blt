@@ -176,20 +176,25 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     }, NULL);
      */
 
-    // Ask the user for the Acquia UUID...
-    $applications = $this->loadAcquiaCloudApplications();
-
-    $application_options = array_map(function($item) {
-      return "$item->name : ($item->uuid)";
-    }, $applications);
-
-    $site_index = $this->io->select('<question>Which acquia environment should we setup aliases for?</question> ', $application_options, FALSE);
-    $application = $applications[$site_index];
-    $this->project->setAppId($application->uuid);
-
-    // Gather the Acquia git remote URL
-    $environments = $this->loadAcquiaCloudApplicationEnvironments($application->uuid);
-    $this->project->setGitRemoteUrl($environments[0]->vcs->url);
+    // Ask if we're connecting to an Acquia application
+    $setupAcquia = $this->io->askConfirmation('Do you want to setup an Acquia Cloud application?', FALSE);
+    
+    if ($setupAcquia) {
+      // Ask the user for the Acquia UUID...
+      $applications = $this->loadAcquiaCloudApplications();
+  
+      $application_options = array_map(function($item) {
+        return "$item->name : ($item->uuid)";
+      }, $applications);
+  
+      $site_index = $this->io->select('<question>Which acquia environment should we setup aliases for?</question> ', $application_options, FALSE);
+      $application = $applications[$site_index];
+      $this->project->setAppId($application->uuid);
+  
+      // Gather the Acquia git remote URL
+      $environments = $this->loadAcquiaCloudApplicationEnvironments($application->uuid);
+      $this->project->setGitRemoteUrl($environments[0]->vcs->url);
+    }
   }
 
   protected function loadAcquiaCloudApplicationEnvironments($appId) {
