@@ -5,14 +5,14 @@ recipe: drupal8
 config:
   webroot: docroot
   php: '7.2'
-  drush: global:8.1.12
+  drush: '*'
   xdebug: true
   conf: 
     php: .vscode/php.ini
 
 services:
   node:
-    type: node:8
+    type: node:10
     globals:
       webpack: 'latest'
   database:
@@ -32,7 +32,3 @@ tooling:
   blt:
     service: appserver
     cmd: /app/vendor/bin/blt
-
-events:
-  post-start:
-    - echo "Making the .bashrc file"
