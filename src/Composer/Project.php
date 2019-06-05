@@ -11,6 +11,7 @@ class Project
   protected $machineName;
   protected $appId;
   protected $jiraProjectCode;
+  protected $gitRemoteUrl;
 
   public function __construct($project_name = NULL) {
     if ($project_name) {
@@ -38,6 +39,10 @@ class Project
 
   public function setAppId($appId) {
     $this->appId = $appId;
+  }
+
+  public function setGitRemoteUrl($url) {
+    $this->gitRemoteUrl = $url;
   }
 
   private function machineNameify($label) {

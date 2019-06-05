@@ -19,6 +19,10 @@ use Symfony\Component\Yaml\Yaml;
 use Acquia\Blt\Robo\Common\YamlMunge;
 
 use function is_string;
+use function file_put_contents;
+use function file_get_contents;
+use function json_decode;
+use function json_encode;
 
 class Plugin implements PluginInterface, EventSubscriberInterface
 {
@@ -111,39 +115,20 @@ class Plugin implements PluginInterface, EventSubscriberInterface
    * @return void
    */
   protected function setupProject() {
-    $this->project = new Project();
-    $this->gatherProjectInformation();
-    $this->copyTemplateFiles();
-    $this->generateBltConfig();
-    $this->generateLandoConfig();
-    $this->generateComposerJson();
+    $setupFile = $this->getRepoRoot() . '/.meltmedia';
+    if (!file_exists($setupFile)) {
+      $this->project = new Project();
+      $this->gatherProjectInformation();
+      $this->copyTemplateFiles();
+      $this->generateBltConfig();
+      $this->generateLandoConfig();
+      $this->generateTravisConfig();
 
-    // initialize drupal aliases
-    $command = 'cd ' . $this->getRepoRoot() . ' && lando start';
-    $success = $this->executeCommand($command, [], TRUE);
-    if (!$success) {
-      $this->io->write("<error>BLT installation failed! Please execute <comment>$command --verbose</comment> to debug the issue.</error>");
-    }
-
-    // initialize drupal aliases
-    $command = $this->getVendorPath() . '/acquia/blt/bin/blt blt:init:settings --ansi -y';
-    $success = $this->executeCommand($command, [], TRUE);
-    if (!$success) {
-      $this->io->write("<error>BLT installation failed! Please execute <comment>$command --verbose</comment> to debug the issue.</error>");
-    }
-
-    // initialize drupal aliases
-    $command = $this->getVendorPath() . '/acquia/blt/bin/blt setup --ansi -y';
-    $success = $this->executeCommand($command, [], TRUE);
-    if (!$success) {
-      $this->io->write("<error>BLT installation failed! Please execute <comment>$command --verbose</comment> to debug the issue.</error>");
-    }
-
-    // initialize drupal aliases - This may not be necessary if it happens during `blt setup`
-    $command = $this->getVendorPath() . '/acquia/blt/bin/blt recipes:aliases:init:acquia --ansi -y';
-    $success = $this->executeCommand($command, [], TRUE);
-    if (!$success) {
-      $this->io->write("<error>BLT installation failed! Please execute <comment>$command --verbose</comment> to debug the issue.</error>");
+      $command = "touch $setupFile";
+      $success = $this->executeCommand($command, [], TRUE);
+      if (!$success) {
+        $this->io->write("<error>Could not run $command</error>");
+      }
     }
   }
 
@@ -180,24 +165,48 @@ class Plugin implements PluginInterface, EventSubscriberInterface
       return $answer;
     }, NULL, $this->project->machineName);
 
-    // Verify the machine-name...
+    // @todo When we are ready to enforce project name, uncomment
+    // Ask for the JIRA project name...
+    /***
     $this->io->askAndValidate("Set the JIRA project name if you have one. <comment>(Leave empty if you don't know)</comment>: ", function($answer) {
       if (!is_null($answer)) {
         $this->project->setJiraProjectCode($answer);
       }
       return $answer;
     }, NULL);
+     */
 
-    // Ask the user for the Acquia UUID...
-    $applications = $this->loadAcquiaCloudApplications();
+    // Ask if we're connecting to an Acquia application
+    $setupAcquia = $this->io->askConfirmation('Do you want to setup an Acquia Cloud application?', FALSE);
+    
+    if ($setupAcquia) {
+      // Ask the user for the Acquia UUID...
+      $applications = $this->loadAcquiaCloudApplications();
+  
+      $application_options = array_map(function($item) {
+        return "$item->name : ($item->uuid)";
+      }, $applications);
+  
+      $site_index = $this->io->select('<question>Which acquia environment should we setup aliases for?</question> ', $application_options, FALSE);
+      $application = $applications[$site_index];
+      $this->project->setAppId($application->uuid);
+  
+      // Gather the Acquia git remote URL
+      $environments = $this->loadAcquiaCloudApplicationEnvironments($application->uuid);
+      $this->project->setGitRemoteUrl($environments[0]->vcs->url);
+    }
+  }
 
-    $application_options = array_map(function($item) {
-      return "$item->name : ($item->uuid)";
-    }, $applications);
+  protected function loadAcquiaCloudApplicationEnvironments($appId) {
+    // attempt to gather acquia site information
+    try {
+      $response = $this->cloudApiClient->get("https://cloud.acquia.com/api/applications/$appId/environments");
+    } catch (ClientException $e) {
+      $this->io->write('<error>' . $e->getMessage() . '</error>');
+    }
 
-    $site_index = $this->io->select('<question>Which acquia environment should we setup aliases for?</question> ', $application_options, FALSE);
-    $application = $applications[$site_index];
-    $this->project->setAppId($application->uuid);
+    $data = json_decode($response->getBody()->getContents());
+    return $data->_embedded->items;
   }
 
   protected function generateBltConfig() {
@@ -205,7 +214,12 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     $local_blt_config = YamlMunge::parseFile($filePath);
     $local_blt_config['project']['human_name'] = $this->project->name;
     $local_blt_config['project']['machine_name'] = $this->project->machineName;
-    $local_blt_config['project']['appId'] = $this->project->appId;
+    $local_blt_config['cloud']['appId'] = $this->project->appId;
+
+    // add git remotes
+    $local_blt_config['git']['remotes'] = [
+      'cloud' => $this->project->gitRemoteUrl
+    ];
 
     if ($this->project->jiraProjectCode) {
       $local_blt_config['project']['prefix'] = $this->project->jiraProjectCode;
@@ -235,12 +249,34 @@ class Plugin implements PluginInterface, EventSubscriberInterface
   }
 
   /**
-   * Generates the custom json we want to include into our BLT
+   * Adds travis CI support
    *
    * @return void
    */
-  protected function generateComposerJson() {
+  protected function generateTravisConfig() {
 
+    $command = "blt recipes:ci:travis:init";
+    $success = $this->executeCommand($command, [], TRUE);
+    if (!$success) {
+      $this->io->write("<error>Could not run $command</error>");
+      return FALSE;
+    }
+
+    $filePath = $this->getRepoRoot() . '/.travis.yml';
+    $travis_config = YamlMunge::parseFile($filePath);
+
+    preg_match('/@(.+)?:/', $this->project->gitRemoteUrl, $matches);
+    if (!empty($matches) && isset($matches[1])) {
+      $acquia_host = $matches[1];
+      $travis_config['addons']['ssh_known_hosts'][] = $acquia_host;
+      $travis_config['addons']['ssh_known_hosts'] = array_unique($travis_config['addons']['ssh_known_hosts']);
+    }
+
+    try {
+      YamlMunge::writeFile($filePath, $travis_config);
+    } catch (\Exception $e) {
+      throw new \Exception("Could not update $filePath.");
+    }
   }
 
   /**
@@ -385,6 +421,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     }
     return FALSE;
   }
+  
 
   /**
    * Create a new directory.

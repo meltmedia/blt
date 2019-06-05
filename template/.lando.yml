@@ -11,10 +11,6 @@ config:
     php: .vscode/php.ini
 
 services:
-  node:
-    type: node:10
-    globals:
-      webpack: 'latest'
   database:
     creds:
       user: drupal
@@ -22,13 +18,9 @@ services:
       database: drupal
 
 tooling:
-  npm:
-    service: node
-  webpack:
-    service: node
   drush:
     service: appserver
-    cmd: drush
+    cmd: /app/vendor/drush/drush/drush
   blt:
     service: appserver
     cmd: /app/vendor/bin/blt
